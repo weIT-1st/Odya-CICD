@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: odya-api
+spec:
+  selector:
+    matchLabels:
+      app: odya-api
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      labels:
+        app: odya-api
+    spec:
+      containers:
+        - image: ghcr.io/weit-1st/odya:latest
+          imagePullPolicy: Always
+          name: odya-api
+          volumeMounts:
+          - name: oracle-wallet
+            mountPath: /oracle_wallet
+            readOnly: true
+          resources:
+            limits:
+              cpu: 500m
+              memory: 400Mi
+          ports:
+            - containerPort: 8080
+          env:
+            - name: APP_PHASE
+              value: sandbox
+            - name: APP_NAME
+              value: odya-api
+            - name: DATASOURCE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: odya-secret
+                  key: datasource
+            - name: DB_USER_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: odya-secret
+                  key: userName
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: odya-secret
+                  key: password
+            - name: SENTRY_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: odya-secret
+                  key: sentry
+            - name: JAVA_TOOL_OPTIONS
+              value: >
+                -XX:InitialRAMPercentage=50
+                -XX:MaxRAMPercentage=80
+                -XX:MinRAMPercentage=80
+          readinessProbe:
+            httpGet:
+              port: 8080
+              path: /ready
+            initialDelaySeconds: 60
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              port: 8080
+              path: /health
+            initialDelaySeconds: 130
+            timeoutSeconds: 10
+            failureThreshold: 10
+      volumes:
+        - name: share-vol
+          emptyDir: {}
+        - name: oracle-wallet
+          hostPath:
+            path: /oracle_wallet
+            type: Directory
+      imagePullSecrets:
+        - name: ghcr-login-secret

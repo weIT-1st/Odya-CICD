@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: jenkins-ingress
+  namespace: jenkins
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: 'true'
+spec:
+  ingressClassName: public
+  rules:
+  - host: "jenkins.jayden-bin.kro.kr"
+    http:
+      paths:
+      - path: "/"
+        pathType: Prefix
+        backend:
+          service:
+            name: jenkins
+            port:
+              number: 8080
+  tls:
+    - hosts:
+        - jenkins.jayden-bin.kro.kr
+      secretName: star-jayden-bin-kro-kr

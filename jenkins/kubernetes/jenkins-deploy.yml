@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins
+  namespace: jenkins
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jenkins
+  template:
+    metadata:
+      labels:
+        app: jenkins
+    spec:
+      containers:
+      - name: jenkins
+        image: ghcr.io/konempty/jenkins-docker-image:latest
+        ports:
+          - name: http-port
+            containerPort: 8080
+        volumeMounts:
+          - name: jenkins-vol
+            mountPath: /var/jenkins_home
+          - name: docker-socket
+            mountPath: /var/run/docker.sock
+      volumes:
+        - name: jenkins-vol
+          hostPath:
+            path: /var/jenkins_volume
+            type: DirectoryOrCreate
+        - name: docker-socket
+          hostPath:
+            path: /var/run/docker.sock
+      nodeSelector:
+        kubernetes.io/hostname: instance-20230426-2354
+      imagePullSecrets:
+      - name: ghcr-login-secret 

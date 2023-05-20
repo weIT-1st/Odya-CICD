@@ -1,0 +1,56 @@
+import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
+
+def checkDeploymentCompletion(){
+    sh('kubectl rollout status deployment/odya-api -nstable')
+}
+
+node {
+    cause = currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause')
+    dir('tmp'){
+        try{
+            stage ('Start notification'){
+                slackSend (message: "==================================================================\n배포 파이프라인이 시작되었습니다.\n${env.JOB_NAME}(${env.BUILD_NUMBER}) by ${cause.userName}\n${env.BUILD_URL}")
+            }
+            stage ('clone') {
+                echo "깃 클론 시작"
+                git branch: params.GIT_BRANCH, url:'https://github.com/weIT-1st/Odya-server.git'
+                echo "깃 클론 끝"
+            }
+            stage('Build image') {
+                echo "빌드 시작"
+                app = docker.build("weit-1st/odya")
+                echo "빌드 끝"
+            }
+            stage('Push image') {
+                echo "도커 이미지 푸시 시작"
+                docker.withRegistry('https://ghcr.io', 'docker-hub') {
+                    app.push("stable")
+                }
+                echo "도커 이미지 푸시 끝"
+            }
+            stage ('Deploy'){
+                echo "배포 시작"
+                if(params.DEPLOY_ACTION == 'apply manifest') {
+                    git branch: "main",  url: "https://github.com/weIT-1st/Odya-CICD.git"
+                    sh('kubectl apply -k deploy/overlays/stable')
+                    checkDeploymentCompletion()
+                } else if(params.DEPLOY_ACTION == 'rollout restart') {
+                    sh('kubectl rollout restart deployment/odya-api -nstable')
+                    checkDeploymentCompletion()
+                }
+                echo "배포 종료"
+            }
+            stage ('End notification'){
+                slackSend (message: "==================================================================\n배포 파이프라인이 종료되었습니다.\n${env.JOB_NAME}(${env.BUILD_NUMBER}) by ${cause.userName}\n${env.BUILD_URL}")
+            }
+        } catch (FlowInterruptedException e) {
+            slackSend (color:"#FF3232",message: "==================================================================\n배포 파이프라인이 취소되었습니다.\n${env.JOB_NAME}(${env.BUILD_NUMBER}) by ${cause.userName}\n${env.BUILD_URL}")
+            throw e
+        } catch (Exception e) {
+            slackSend (color:"#FF3232",message: "==================================================================\n배포 파이프라인이 실패했습니다.\n${env.JOB_NAME}(${env.BUILD_NUMBER}) by ${cause.userName}\n${env.BUILD_URL}")
+            throw e
+        } finally {
+            deleteDir()
+        }
+    }
+}

@@ -1,0 +1,14 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: odya-api
+spec:
+  template:
+    spec:
+      containers:
+        - name: odya-api
+          env:
+            - name: APP_PHASE
+              value: stable
+      nodeSelector:
+        performance: high

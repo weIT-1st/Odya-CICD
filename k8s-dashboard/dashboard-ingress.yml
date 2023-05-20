@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kubernetes-dashboard-ingress
+  namespace: kube-system
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: 'true'
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    nginx.ingress.kubernetes.io/whitelist-source-range: "125.178.36.166/32"
+spec:
+  ingressClassName: public
+  rules:
+  - host: "k8s.jayden-bin.kro.kr"
+    http:
+      paths:
+      - path: "/"
+        pathType: Prefix
+        backend:
+          service:
+            name: kubernetes-dashboard
+            port:
+              number: 443
+  tls:
+    - hosts:
+        - k8s.jayden-bin.kro.kr
+      secretName: star-jayden-bin-kro-kr
