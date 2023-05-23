@@ -23,8 +23,8 @@ spec:
           imagePullPolicy: Always
           name: odya-api
           volumeMounts:
-          - name: oracle-wallet
-            mountPath: /oracle_wallet
+          - name: oracle-config
+            mountPath: /oracle
             readOnly: true
           resources:
             limits:
@@ -57,6 +57,11 @@ spec:
                 secretKeyRef:
                   name: odya-secret
                   key: sentry
+            - name: OBJECT_STORAGE_CONFIG_FILE_PATH
+              valueFrom:
+                secretKeyRef:
+                  name: odya-secret
+                  key: object_strage_config
             - name: JAVA_TOOL_OPTIONS
               value: >
                 -XX:InitialRAMPercentage=50
@@ -78,9 +83,9 @@ spec:
       volumes:
         - name: share-vol
           emptyDir: {}
-        - name: oracle-wallet
+        - name: oracle-config
           hostPath:
-            path: /oracle_wallet
+            path: /oracle
             type: Directory
       imagePullSecrets:
         - name: ghcr-login-secret
