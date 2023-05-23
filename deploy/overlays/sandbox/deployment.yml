@@ -3,6 +3,9 @@ kind: Deployment
 metadata:
   name: odya-api
 spec:
+  strategy:
+    type: Recreate
+    rollingUpdate: null
   template:
     spec:
       containers:
