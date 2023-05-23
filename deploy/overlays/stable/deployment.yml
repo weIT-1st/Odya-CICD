@@ -10,5 +10,9 @@ spec:
           env:
             - name: APP_PHASE
               value: stable
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 2048Mi
       nodeSelector:
         performance: high
