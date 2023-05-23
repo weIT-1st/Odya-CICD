@@ -18,7 +18,7 @@ node {
             }
             stage('Build image') {
                 echo "빌드 시작"
-                app = docker.build("weit-1st/odya")
+                app = docker.build("weit-1st/odya", "--network=host .")
                 echo "빌드 끝"
             }
             stage('Push image') {

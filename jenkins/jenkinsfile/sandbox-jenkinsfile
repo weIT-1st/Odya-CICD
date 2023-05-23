@@ -18,7 +18,7 @@ node {
             }
             stage('Build image') {
                 echo "빌드 시작"
-                app = docker.build("weit-1st/odya", "--platform=linux/amd64 .")
+                app = docker.build("weit-1st/odya", "--network=host --platform=linux/amd64 .")
                 echo "빌드 끝"
             }
             stage('Push image') {
