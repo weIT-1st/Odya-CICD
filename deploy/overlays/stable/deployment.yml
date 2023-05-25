@@ -12,7 +12,7 @@ spec:
               value: stable
           resources:
             limits:
-              cpu: 1000m
+              cpu: 800m
               memory: 2048Mi
       nodeSelector:
         performance: high
