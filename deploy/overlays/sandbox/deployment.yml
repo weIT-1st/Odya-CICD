@@ -4,8 +4,9 @@ metadata:
   name: odya-api
 spec:
   strategy:
-    type: Recreate
-    rollingUpdate: null
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   template:
     spec:
       containers:

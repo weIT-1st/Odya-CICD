@@ -57,6 +57,21 @@ spec:
                 secretKeyRef:
                   name: odya-secret
                   key: sentry
+            - name: OPEN_SEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: odya-secret
+                  key: opensearch_password
+            - name: OPEN_SEARCH_URL
+              valueFrom:
+                secretKeyRef:
+                  name: odya-secret
+                  key: opensearch_url
+            - name: OPEN_SEARCH_USER_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: odya-secret
+                  key: opensearch_user_name
             - name: OBJECT_STORAGE_CONFIG_FILE_PATH
               valueFrom:
                 secretKeyRef:
