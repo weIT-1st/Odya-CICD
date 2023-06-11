@@ -14,6 +14,7 @@ node {
             stage ('clone') {
                 echo "깃 클론 시작"
                 git branch: params.GIT_BRANCH, url:'https://github.com/weIT-1st/Odya-server.git'
+                sh "mkdir ./src/main/resources/firebase/"
                 sh "cp ~/odya-2f0f1-firebase-adminsdk-pwfxi-18bc9d3347.json ./src/main/resources/firebase/odya-2f0f1-firebase-adminsdk-pwfxi-18bc9d3347.json"
                 echo "깃 클론 끝"
             }
