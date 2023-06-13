@@ -77,6 +77,21 @@ spec:
                 secretKeyRef:
                   name: odya-secret
                   key: object_strage_config
+            - name: TNS_ADMIN
+              valueFrom:
+                secretKeyRef:
+                  name: odya-secret
+                  key: tnsAdmin
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: odya-secret
+                  key: awsSecretKey
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: odya-secret
+                  key: awsAccessKey
             - name: JAVA_TOOL_OPTIONS
               value: >
                 -XX:InitialRAMPercentage=50
