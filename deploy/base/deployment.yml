@@ -57,6 +57,11 @@ spec:
                 secretKeyRef:
                   name: odya-secret
                   key: awsAccessKey
+            - name: SENTRY_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: odya-secret
+                  key: sentryDsn
             - name: JAVA_TOOL_OPTIONS
               value: >
                 -XX:InitialRAMPercentage=50
