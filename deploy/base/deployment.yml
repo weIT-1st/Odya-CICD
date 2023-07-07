@@ -28,7 +28,7 @@ spec:
             readOnly: true
           resources:
             limits:
-              cpu: 500m
+              cpu: 750m
               memory: 500Mi
           ports:
             - containerPort: 8080
