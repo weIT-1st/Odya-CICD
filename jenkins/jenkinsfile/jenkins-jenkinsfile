@@ -1,0 +1,38 @@
+import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
+
+node {
+    cause = currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause')
+    dir('tmp'){
+        try {
+            stage ('Start notification'){
+                slackSend (message: "==================================================================\n배포 파이프라인이 시작되었습니다.\n${env.JOB_NAME}(${env.BUILD_NUMBER}) by ${cause.userName}\n${env.BUILD_URL}")
+            }
+            stage ('clone') {
+                echo "깃 클론 시작"
+                git branch: params.GIT_BRANCH, url:'https://github.com/weIT-1st/Odya-CICD.git'
+                echo "깃 클론 끝"
+            }
+            stage('Build image') {
+                echo "빌드 시작"
+                app = docker.build("konempty/jenkins-docker-image","-f ./jenkins/Dockerfile-jenkins .")
+                echo "빌드 끝"
+            }
+            stage('Push image') {
+                docker.withRegistry('https://ghcr.io', 'docker-hub') {
+                    app.push("latest")
+                }
+            }
+            stage ('End notification'){
+                slackSend (message: "==================================================================\n배포 파이프라인이 종료되었습니다.\n${env.JOB_NAME}(${env.BUILD_NUMBER}) by ${cause.userName}\n${env.BUILD_URL}")
+            }
+        } catch (FlowInterruptedException e) {
+            slackSend (color:"#FF3232",message: "==================================================================\n배포 파이프라인이 취소되었습니다.\n${env.JOB_NAME}(${env.BUILD_NUMBER}) by ${cause.userName}\n${env.BUILD_URL}")
+            throw e
+        } catch (Exception e) {
+            slackSend (color:"#FF3232",message: "==================================================================\n배포 파이프라인이 실패했습니다.\n${env.JOB_NAME}(${env.BUILD_NUMBER}) by ${cause.userName}\n${env.BUILD_URL}")
+            throw e
+        } finally {
+            deleteDir()
+        }
+    }
+}
