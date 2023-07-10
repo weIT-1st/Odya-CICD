@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   name: odya-api
 spec:
+  progressDeadlineSeconds: 900
   selector:
     matchLabels:
       app: odya-api
