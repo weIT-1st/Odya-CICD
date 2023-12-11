@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: infra
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:latest
+          command:
+            - redis-server
+            - "/redis-master/redis.conf"
+          env:
+            - name: MASTER
+              value: "true"
+          ports:
+            - containerPort: 6379
+          resources:
+            limits:
+              cpu: "0.5"
+
+          volumeMounts:
+            - name: redis-vol
+              mountPath: /redis-master-data
+            - name: config
+              mountPath: /redis-master
+      volumes:
+        - name: redis-vol
+          hostPath:
+            path: /var/redis_volume
+            type: DirectoryOrCreate
+        - name: config
+          configMap:
+            name: redis-config
+            items:
+              - key: redis-config
+                path: redis.conf
+      nodeSelector:
+        kubernetes.io/hostname: instance-20230905-1334
