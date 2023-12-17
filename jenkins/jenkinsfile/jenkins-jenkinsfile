@@ -7,7 +7,7 @@ node {
             stage ('Start notification'){
                 slackSend (message: "==================================================================\n배포 파이프라인이 시작되었습니다.\n${env.JOB_NAME}(${env.BUILD_NUMBER}) by ${cause.userName}\n${env.BUILD_URL}")
             }
-            stage ('clone') {
+            stage ('Clone') {
                 echo "깃 클론 시작"
                 git branch: params.GIT_BRANCH, url:'https://github.com/weIT-1st/Odya-CICD.git'
                 echo "깃 클론 끝"

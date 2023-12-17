@@ -6,7 +6,7 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: 'true'
     nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
-    nginx.ingress.kubernetes.io/whitelist-source-range: "125.178.36.166/32"
+    nginx.ingress.kubernetes.io/whitelist-source-range: ""
 spec:
   ingressClassName: public
   rules:

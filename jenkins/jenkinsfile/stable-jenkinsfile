@@ -11,7 +11,7 @@ node {
             stage ('Start notification'){
                 slackSend (message: "==================================================================\n배포 파이프라인이 시작되었습니다.\n${env.JOB_NAME}(${env.BUILD_NUMBER}) by ${cause.userName}\n${env.BUILD_URL}")
             }
-            stage ('clone') {
+            stage ('Clone') {
                 echo "깃 클론 시작"
                 git branch: params.GIT_BRANCH, url:'https://github.com/weIT-1st/Odya-server.git'
                 sh "mkdir ./src/main/resources/firebase/"
@@ -20,7 +20,9 @@ node {
             }
             stage('Build image') {
                 echo "빌드 시작"
-                app = docker.build("weit-1st/odya", "--network=host .")
+                docker.withRegistry('https://ghcr.io', 'docker-hub') {
+                    app = docker.build("weit-1st/odya")
+                }
                 echo "빌드 끝"
             }
             stage('Push image') {
