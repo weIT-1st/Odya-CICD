@@ -44,5 +44,3 @@ spec:
             items:
               - key: redis-config
                 path: redis.conf
-      nodeSelector:
-        kubernetes.io/hostname: instance-20230905-1334

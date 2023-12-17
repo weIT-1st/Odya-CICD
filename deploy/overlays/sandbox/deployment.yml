@@ -15,4 +15,4 @@ spec:
             - name: APP_PHASE
               value: sandbox
       nodeSelector:
-        performance: low
+        performance: high
