@@ -15,4 +15,6 @@ RUN mv kustomize /usr/local/bin/
 
 RUN install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
+RUN usermod -aG docker jenkins
+
 USER jenkins
