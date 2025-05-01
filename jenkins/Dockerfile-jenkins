@@ -2,45 +2,52 @@ FROM jenkins/jenkins:jdk21
 
 USER root
 
+# 필수 패키지 설치
 RUN apt-get update && apt-get install -y \
+    iptables \
+    uidmap \
+    dbus-user-session \
     libseccomp2 \
+    curl \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# rootless Docker 설치
-RUN curl -fsSL https://get.docker.com/rootless | sh
-
-# 환경 변수 설정
-ENV PATH=/home/jenkins/bin:$PATH
-ENV DOCKER_HOST=unix:///run/user/1000/docker.sock
-
 # kubectl 설치 (ARM64)
-RUN curl -LO "https://dl.k8s.io/release/$(curl -s https://dl.k8s.io/release/stable.txt)/bin/linux/arm64/kubectl" \
-    && install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl \
-    && rm kubectl
+RUN KUBECTL_VERSION=$(curl -sL https://dl.k8s.io/release/stable.txt) && \
+    curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/arm64/kubectl" && \
+    install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl && \
+    rm kubectl
 
 # kustomize 설치
-RUN curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash \
-    && mv kustomize /usr/local/bin/
+RUN curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash && \
+    mv kustomize /usr/local/bin/
 
-# Docker group 추가 (선택)
-RUN groupadd docker && usermod -aG docker jenkins
+# 루트리스 Docker 설치 스크립트만 다운로드 (설치 및 실행은 런타임에)
+RUN curl -fsSL https://get.docker.com/rootless -o /var/jenkins_home/install-rootless.sh && \
+    chmod +x /var/jenkins_home/install-rootless.sh && \
+    chown jenkins:jenkins /var/jenkins_home/install-rootless.sh
 
-# 자동 초기화 스크립트 추가
+# Jenkins 유저로 전환
+USER jenkins
+
+# 환경 변수 설정
+ENV PATH=/var/jenkins_home/bin:$PATH
+ENV DOCKER_HOST=unix:///run/user/1000/docker.sock
+
+# 루트리스 Docker 초기화 및 Jenkins 실행 스크립트 작성
 RUN echo '\
 #!/bin/bash\n\
 set -e\n\
 export PATH=$HOME/bin:$PATH\n\
 export DOCKER_HOST=unix:///run/user/1000/docker.sock\n\
-if ! pgrep -f dockerd-rootless.sh > /dev/null; then\n\
-  echo "Starting rootless Docker daemon..."\n\
-  setsid dockerd-rootless.sh > /tmp/dockerd.log 2>&1 &\n\
+if [ ! -S /run/user/1000/docker.sock ]; then\n\
+  echo "[+] Installing and starting rootless Docker..."\n\
+  bash $HOME/install-rootless.sh\n\
+  $HOME/bin/dockerd-rootless-setuptool.sh install\n\
+  nohup dockerd-rootless.sh > /tmp/dockerd.log 2>&1 &\n\
   sleep 3\n\
 fi\n\
-' > /usr/local/bin/start-rootless-docker && chmod +x /usr/local/bin/start-rootless-docker
+exec /usr/bin/tini -- /usr/local/bin/jenkins.sh\n\
+' > /var/jenkins_home/entrypoint.sh && chmod +x /var/jenkins_home/entrypoint.sh
 
-# Jenkins 유저로 전환
-USER jenkins
-
-# 부팅 시 rootless Docker 자동 실행
-ENTRYPOINT ["/usr/local/bin/start-rootless-docker"]
-CMD ["/usr/bin/tini", "--", "/usr/local/bin/jenkins.sh"]
+# ENTRYPOINT 지정
+ENTRYPOINT ["/var/jenkins_home/entrypoint.sh"]
