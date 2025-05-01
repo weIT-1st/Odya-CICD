@@ -47,7 +47,7 @@ if [ ! -S /run/user/1000/docker.sock ]; then\n\
   sleep 3\n\
 fi\n\
 exec /usr/bin/tini -- /usr/local/bin/jenkins.sh\n\
-' > /var/jenkins_home/entrypoint.sh && chmod +x /var/jenkins_home/entrypoint.sh
+' > /opt/entrypoint.sh && chmod +x /opt/entrypoint.sh
 
 # ENTRYPOINT 지정
-ENTRYPOINT ["/var/jenkins_home/entrypoint.sh"]
+ENTRYPOINT ["/opt/entrypoint.sh"]
