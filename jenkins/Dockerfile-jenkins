@@ -1,20 +1,46 @@
-#Dockerfile
 FROM jenkins/jenkins:jdk21
 
 USER root
 
-RUN apt-get update && apt-get upgrade -y
+RUN apt-get update && apt-get install -y \
+    libseccomp2 \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN curl -fsSL https://get.docker.com/ | sh
+# rootless Docker 설치
+RUN curl -fsSL https://get.docker.com/rootless | sh
 
-RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/arm64/kubectl"
+# 환경 변수 설정
+ENV PATH=/home/jenkins/bin:$PATH
+ENV DOCKER_HOST=unix:///run/user/1000/docker.sock
 
-RUN curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+# kubectl 설치 (ARM64)
+RUN curl -LO "https://dl.k8s.io/release/$(curl -s https://dl.k8s.io/release/stable.txt)/bin/linux/arm64/kubectl" \
+    && install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl \
+    && rm kubectl
 
-RUN mv kustomize /usr/local/bin/
+# kustomize 설치
+RUN curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash \
+    && mv kustomize /usr/local/bin/
 
-RUN install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+# Docker group 추가 (선택)
+RUN groupadd docker && usermod -aG docker jenkins
 
-RUN usermod -aG docker jenkins
+# 자동 초기화 스크립트 추가
+RUN echo '\
+#!/bin/bash\n\
+set -e\n\
+export PATH=$HOME/bin:$PATH\n\
+export DOCKER_HOST=unix:///run/user/1000/docker.sock\n\
+if ! pgrep -f dockerd-rootless.sh > /dev/null; then\n\
+  echo "Starting rootless Docker daemon..."\n\
+  setsid dockerd-rootless.sh > /tmp/dockerd.log 2>&1 &\n\
+  sleep 3\n\
+fi\n\
+' > /usr/local/bin/start-rootless-docker && chmod +x /usr/local/bin/start-rootless-docker
 
+# Jenkins 유저로 전환
 USER jenkins
+
+# 부팅 시 rootless Docker 자동 실행
+ENTRYPOINT ["/usr/local/bin/start-rootless-docker"]
+CMD ["/usr/bin/tini", "--", "/usr/local/bin/jenkins.sh"]
