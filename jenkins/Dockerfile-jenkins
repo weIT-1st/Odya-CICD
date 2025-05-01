@@ -1,53 +1,20 @@
+#Dockerfile
 FROM jenkins/jenkins:jdk21
 
 USER root
 
-# 필수 패키지 설치
-RUN apt-get update && apt-get install -y \
-    iptables \
-    uidmap \
-    dbus-user-session \
-    libseccomp2 \
-    curl \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get upgrade -y
 
-# kubectl 설치 (ARM64)
-RUN KUBECTL_VERSION=$(curl -sL https://dl.k8s.io/release/stable.txt) && \
-    curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/arm64/kubectl" && \
-    install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl && \
-    rm kubectl
+RUN curl -fsSL https://get.docker.com/ | sh
 
-# kustomize 설치
-RUN curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash && \
-    mv kustomize /usr/local/bin/
+RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/arm64/kubectl"
 
-# 루트리스 Docker 설치 스크립트만 다운로드 (설치 및 실행은 런타임에)
-RUN curl -fsSL https://get.docker.com/rootless -o /var/jenkins_home/install-rootless.sh && \
-    chmod +x /var/jenkins_home/install-rootless.sh && \
-    chown jenkins:jenkins /var/jenkins_home/install-rootless.sh
+RUN curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
 
-# Jenkins 유저로 전환
+RUN mv kustomize /usr/local/bin/
+
+RUN install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+RUN usermod -aG docker jenkins
+
 USER jenkins
-
-# 환경 변수 설정
-ENV PATH=/var/jenkins_home/bin:$PATH
-ENV DOCKER_HOST=unix:///run/user/1000/docker.sock
-
-# 루트리스 Docker 초기화 및 Jenkins 실행 스크립트 작성
-RUN echo '\
-#!/bin/bash\n\
-set -e\n\
-export PATH=$HOME/bin:$PATH\n\
-export DOCKER_HOST=unix:///run/user/1000/docker.sock\n\
-if [ ! -S /run/user/1000/docker.sock ]; then\n\
-  echo "[+] Installing and starting rootless Docker..."\n\
-  bash $HOME/install-rootless.sh\n\
-  $HOME/bin/dockerd-rootless-setuptool.sh install\n\
-  nohup dockerd-rootless.sh > /tmp/dockerd.log 2>&1 &\n\
-  sleep 3\n\
-fi\n\
-exec /usr/bin/tini -- /usr/local/bin/jenkins.sh\n\
-' > /opt/entrypoint.sh && chmod +x /opt/entrypoint.sh
-
-# ENTRYPOINT 지정
-ENTRYPOINT ["/opt/entrypoint.sh"]
